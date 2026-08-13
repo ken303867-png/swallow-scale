@@ -18,6 +18,8 @@ jobs:
           print('=== storage tokens ===')
           for token in ['localStorage','indexedDB','sessionStorage']:
             print(token, text.count(token))
+          print('=== storage key declarations ===')
+          for m in re.finditer(r'(?:const|let|var)\s+STORAGE_KEY\s*=\s*[^;]+;',text): print(m.group(0))
           print('=== contexts ===')
           for token in ['localStorage','indexedDB']:
             for i,m in enumerate(re.finditer(token,text)):
