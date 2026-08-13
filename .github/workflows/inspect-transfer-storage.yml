@@ -1,0 +1,28 @@
+name: Inspect transfer storage
+on:
+  push:
+    branches: [feature/transfer-fix]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Inspect storage usage
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import re
+          text=open('index.html','r',encoding='utf-8',errors='replace').read()
+          print('=== storage tokens ===')
+          for token in ['localStorage','indexedDB','sessionStorage']:
+            print(token, text.count(token))
+          print('=== contexts ===')
+          for token in ['localStorage','indexedDB']:
+            for i,m in enumerate(re.finditer(token,text)):
+              if i>=30: break
+              a=max(0,m.start()-220); b=min(len(text),m.end()+320)
+              print(f'--- {token} {i+1} ---')
+              print(text[a:b].replace('\n',' '))
+          PY
