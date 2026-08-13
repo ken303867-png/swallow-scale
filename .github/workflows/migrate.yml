@@ -1,0 +1,85 @@
+name: Migrate swallow-scale
+on:
+  push:
+    paths:
+      - '.github/workflows/migrate.yml'
+permissions:
+  contents: write
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout target repository
+        uses: actions/checkout@v6
+      - name: Copy scale PWA from legacy repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://raw.githubusercontent.com/ken303867-png/a/main"
+          curl -fsSL "$BASE/scale/index.html" -o index.html
+          curl -fsSL "$BASE/scale/manifest.webmanifest" -o manifest.webmanifest
+          curl -fsSL "$BASE/scale/sw.js" -o sw.js
+          curl -fsSL "$BASE/scale/icon.svg" -o icon.svg
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('sw.js')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace("dysphagia-scale-pwa-v1", "swallow-scale-v1")
+          p.write_text(s, encoding='utf-8')
+          PY
+          cat > README.md <<'EOF'
+          # swallow-scale
+          DSS・摂食嚥下能力グレード・FILS・FOISを学ぶ評価尺度50問PWA。
+
+          旧 `ken303867-png/a/scale/` から独立したリポジトリである。
+          EOF
+          mkdir -p .github/workflows
+          cat > .github/workflows/pages.yml <<'YAML'
+          name: Deploy PWA to GitHub Pages
+          on:
+            push:
+              branches: [main]
+            workflow_dispatch:
+          permissions:
+            contents: read
+            pages: write
+            id-token: write
+          concurrency:
+            group: pages
+            cancel-in-progress: false
+          jobs:
+            deploy:
+              environment:
+                name: github-pages
+                url: ${{ steps.deployment.outputs.page_url }}
+              runs-on: ubuntu-latest
+              steps:
+                - name: Checkout
+                  uses: actions/checkout@v6
+                - name: Configure Pages
+                  uses: actions/configure-pages@v5
+                  with:
+                    enablement: true
+                - name: Upload site
+                  uses: actions/upload-pages-artifact@v4
+                  with:
+                    path: .
+                - name: Deploy
+                  id: deployment
+                  uses: actions/deploy-pages@v4
+          YAML
+          cat > .github/workflows/migrate.yml <<'YAML'
+          name: Migration completed
+          on:
+            workflow_dispatch:
+          jobs:
+            status:
+              runs-on: ubuntu-latest
+              steps:
+                - run: echo "swallow-scale migration already completed"
+          YAML
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html manifest.webmanifest sw.js icon.svg README.md .github/workflows
+          git commit -m "Migrate swallow-scale PWA from legacy repository"
+          git push origin HEAD:main
