@@ -1,5 +1,5 @@
 "use strict";
-const CACHE='swallow-scale-v2-transfer';
+const CACHE='swallow-scale-v3-backup';
 const SHELL=['./','./index.html','./manifest.webmanifest','./icon.svg','./data-transfer.js'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>(k.startsWith('swallow-scale-')||k.startsWith('dysphagia-scale-pwa-'))&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
